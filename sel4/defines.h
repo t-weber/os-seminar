@@ -49,9 +49,9 @@ typedef double           f64;
 #define PAGE_SIZE        4096
 #define CHAROUT_PHYS     0x000b8000  // see https://jbwyatt.com/253/emu/memory.html
 
-#define ATTR_BOLD        0b00001111
+#define ATTR_BOLD        0b00011111
 #define ATTR_INV         0b01110000
-#define ATTR_NORM        0b00000111
+#define ATTR_NORM        0b00010111
 
 #define KEYB_DATA_PORT   0x60        // see https://wiki.osdev.org/%228042%22_PS/2_Controller
 #define KEYB_PIC         0           // on which PIC is the keyboard?

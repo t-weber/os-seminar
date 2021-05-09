@@ -317,3 +317,14 @@ void read_str(i8 *str, const i8 *addr, u32 len)
 		addr += 2;
 	}
 }
+
+
+void clear_scr(u8 attrib, i8 *addr, u64 size)
+{
+	for(u64 i=0; i<size; ++i)
+	{
+		*addr++ = 0;
+		*addr++ = attrib;
+	}
+}
+

@@ -41,5 +41,6 @@ extern i8 my_isdigit(i8 c, i8 hex);
 extern void write_char(i8 ch, u8 attrib, i8 *addr);
 extern void write_str(i8 *str, u8 attrib, i8 *addr);
 extern void read_str(i8 *str, const i8 *addr, u32 len);
+extern void clear_scr(u8 attrib, i8 *addr, u64 size);
 
 #endif
