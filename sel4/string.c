@@ -101,8 +101,6 @@ void int_to_str(i64 num, u64 base, i8* buf)
 }
 
 
-#include <stdio.h>
-
 void real_to_str(f64 num, u64 base, i8* buf, u8 decimals)
 {
 	const f64 eps = 1e-8;
