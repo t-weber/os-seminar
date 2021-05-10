@@ -21,7 +21,7 @@
 
 #include <sel4/sel4.h>
 
-#if SERIAL_DEBUG !=0
+#if SERIAL_DEBUG != 0
 	#include <stdio.h>
 #else
 	#define printf(...) {}

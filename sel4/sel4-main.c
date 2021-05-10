@@ -16,7 +16,6 @@
 
 #include "defines.h"
 #include "string.h"
-#include "expr_parser.h"
 #include "shell.h"
 
 #include <sel4/sel4.h>

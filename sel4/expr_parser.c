@@ -685,7 +685,11 @@ static t_value factor()
 				{
 					next_lookahead();
 
-					if(my_strncmp(ident, "sin", MAX_IDENT)==0)
+					if(my_strncmp(ident, "sqrt", MAX_IDENT)==0)
+					{
+						return sqrt(expr_val1);
+					}
+					else if(my_strncmp(ident, "sin", MAX_IDENT)==0)
 					{
 						return sin(expr_val1);
 					}
@@ -696,6 +700,30 @@ static t_value factor()
 					else if(my_strncmp(ident, "tan", MAX_IDENT)==0)
 					{
 						return tan(expr_val1);
+					}
+					else if(my_strncmp(ident, "asin", MAX_IDENT)==0)
+					{
+						return asin(expr_val1);
+					}
+					else if(my_strncmp(ident, "acos", MAX_IDENT)==0)
+					{
+						return acos(expr_val1);
+					}
+					else if(my_strncmp(ident, "atan", MAX_IDENT)==0)
+					{
+						return atan(expr_val1);
+					}
+					else if(my_strncmp(ident, "log", MAX_IDENT)==0)
+					{
+						return log(expr_val1);
+					}
+					else if(my_strncmp(ident, "log2", MAX_IDENT)==0)
+					{
+						return log2(expr_val1);
+					}
+					else if(my_strncmp(ident, "log10", MAX_IDENT)==0)
+					{
+						return log10(expr_val1);
 					}
 					else
 					{
@@ -716,6 +744,10 @@ static t_value factor()
 					if(my_strncmp(ident, "atan2", MAX_IDENT)==0)
 					{
 						return atan2(expr_val1, expr_val2);
+					}
+					else if(my_strncmp(ident, "pow", MAX_IDENT)==0)
+					{
+						return pow(expr_val1, expr_val2);
 					}
 					else
 					{

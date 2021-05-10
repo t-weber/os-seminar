@@ -22,6 +22,17 @@ void reverse_str(i8* buf, u64 len)
 }
 
 
+i8 digit_to_char(u8 num, u64 base)
+{
+	u64 mod = num % base;
+
+	if(mod <= 9)
+		return (i8)mod + '0';
+	else
+		return (i8)(mod-10) + 'a';
+}
+
+
 void uint_to_str(u64 num, u64 base, i8* buf)
 {
 	u64 idx = 0;
@@ -45,7 +56,6 @@ void uint_to_str(u64 num, u64 base, i8* buf)
 	}
 
 	buf[idx] = 0;
-	//printf("len = %d\n", idx);
 
 	reverse_str(buf, idx);
 }
@@ -86,9 +96,64 @@ void int_to_str(i64 num, u64 base, i8* buf)
 	}
 
 	buf[idx] = 0;
-	//printf("len = %d\n", idx);
 
 	reverse_str(buf+beg, idx-beg);
+}
+
+
+#include <stdio.h>
+
+void real_to_str(f64 num, u64 base, i8* buf, u8 decimals)
+{
+	const f64 eps = 1e-8;
+
+	// negative number?
+	u64 idx = 0;
+	if(num < 0)
+	{
+		buf[idx++] = '-';
+		num = -num;
+	}
+
+	// get number before decimal point
+	uint_to_str((u64)num, base, buf+idx);
+
+	// get number after decimal point
+	char buf_decimals[64];
+	for(u8 dec=0; dec<decimals; ++dec)
+	{
+		// strip away digits before decimal point
+		num -= (u64)num;
+
+		// get next decimal
+		num *= base;
+		// for numeric stability
+		if(num >= base - eps)
+			num = 0;
+
+		u8 digit = (u8)num;
+		// for numeric stability
+		if(num >= (f64)digit + 1 - eps)
+			++digit;
+
+		buf_decimals[dec] = digit_to_char(digit, base);
+	}
+	buf_decimals[decimals] = 0;
+
+	// strip away trailing '0's
+	for(i16 dec=decimals-1; dec>=0; --dec)
+	{
+		if(buf_decimals[dec] == '0')
+			buf_decimals[dec] = 0;
+		else
+			break;
+	}
+
+	if(my_strlen(buf_decimals))
+	{
+		strncat_char(buf, '.', 64);
+		my_strncat(buf, buf_decimals, 64);
+	}
 }
 
 
@@ -131,9 +196,9 @@ void my_memcpy_interleaved(i8* mem_dst, i8* mem_src, u64 size, u8 interleave)
 }
 
 
-void my_strncpy(i8* str_dst, const i8* str_src, i64 max_len)
+void my_strncpy(i8* str_dst, const i8* str_src, u64 max_len)
 {
-	for(i64 i=0; i<max_len; ++i)
+	for(u64 i=0; i<max_len; ++i)
 	{
 		i8 c = str_src[i];
 		str_dst[i] = c;
@@ -144,9 +209,16 @@ void my_strncpy(i8* str_dst, const i8* str_src, i64 max_len)
 }
 
 
-void strncat_char(i8* str, i8 c, i64 max_len)
+void my_strncat(i8* str_dst, const i8* str_src, u64 max_len)
 {
-	i64 len = my_strlen(str);
+	u64 len = my_strlen(str_dst);
+	my_strncpy(str_dst + len, str_src, max_len - len);
+}
+
+
+void strncat_char(i8* str, i8 c, u64 max_len)
+{
+	u64 len = my_strlen(str);
 	if(len+1 < max_len)
 	{
 		str[len] = c;
@@ -155,9 +227,9 @@ void strncat_char(i8* str, i8 c, i64 max_len)
 }
 
 
-i8 my_strncmp(const i8* str1, const i8* str2, i64 max_len)
+i8 my_strncmp(const i8* str1, const i8* str2, u64 max_len)
 {
-	for(i64 i=0; i<max_len; ++i)
+	for(u64 i=0; i<max_len; ++i)
 	{
 		i8 c1 = str1[i];
 		i8 c2 = str2[i];
@@ -178,8 +250,8 @@ i8 my_strncmp(const i8* str1, const i8* str2, i64 max_len)
 
 i8 my_strcmp(const i8* str1, const i8* str2)
 {
-	i64 len1 = my_strlen(str1);
-	i64 len2 = my_strlen(str2);
+	u64 len1 = my_strlen(str1);
+	u64 len2 = my_strlen(str2);
 
 	return my_strncmp(str1, str2, my_max(len1, len2));
 }
@@ -226,10 +298,10 @@ i8 my_isdigit(i8 c, i8 hex)
 
 i64 my_atoi(const i8* str, i64 base)
 {
-	i64 len = my_strlen(str);
+	u64 len = my_strlen(str);
 	i64 num = 0;
 
-	for(i64 i=0; i<len; ++i)
+	for(u64 i=0; i<len; ++i)
 	{
 		i64 digit = 0;
 		if(my_isdigit(str[i], 0))
@@ -248,12 +320,12 @@ i64 my_atoi(const i8* str, i64 base)
 
 f64 my_atof(const i8* str, i64 base)
 {
-	i64 len = my_strlen(str);
+	u64 len = my_strlen(str);
 	f64 num = 0, decimal = 0;
 	i8 in_num = 1;
 	i64 denom_pos = 1;
 
-	for(i64 i=0; i<len; ++i)
+	for(u64 i=0; i<len; ++i)
 	{
 		if(str[i] == '.')
 		{
@@ -328,3 +400,13 @@ void clear_scr(u8 attrib, i8 *addr, u64 size)
 	}
 }
 
+
+/* test
+#include <stdio.h>
+int main()
+{
+	char buf[64];
+	real_to_str(-987.01020300, 10, buf, 10);
+	puts(buf);
+}
+*/
