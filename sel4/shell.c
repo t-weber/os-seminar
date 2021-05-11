@@ -77,7 +77,7 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 #endif
 			write_str(numbuf, ATTR_BOLD, charout + (y+1)*SCREEN_COL_SIZE*2 + x_min*2);
 
-			print_symbols();
+			print_symbols(&ctx);
 
 			// new line
 			y += 2;
