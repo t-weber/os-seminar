@@ -399,7 +399,7 @@ void clear_scr(u8 attrib, i8 *addr, u64 size)
 }
 
 
-/* test
+/* // test
 #include <stdio.h>
 int main()
 {

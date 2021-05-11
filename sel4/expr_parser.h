@@ -22,11 +22,37 @@
 #endif
 
 
-extern void init_symbols();
-extern void deinit_symbols();
+#define MAX_IDENT 256
 
-extern t_value parse(const char* str);
-extern void print_symbols();
+
+struct Symbol
+{
+	char name[MAX_IDENT];
+	t_value value;
+
+	struct Symbol* next;
+};
+
+
+struct ParserContext
+{
+	int lookahead;
+	t_value lookahead_val;
+	char lookahead_text[MAX_IDENT];
+
+	int input_idx;
+	int input_len;
+	const char* input;
+
+	struct Symbol symboltable;
+};
+
+
+extern void init_parser(struct ParserContext*);
+extern void deinit_parser(struct ParserContext*);
+
+extern t_value parse(struct ParserContext*, const char* str);
+extern void print_symbols(struct ParserContext*);
 
 
 #endif

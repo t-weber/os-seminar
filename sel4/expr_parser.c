@@ -19,10 +19,8 @@
 
 
 // ----------------------------------------------------------------------------
-// definitions
+// forward declarations
 // ----------------------------------------------------------------------------
-#define MAX_IDENT 256
-
 
 enum Token
 {
@@ -34,18 +32,13 @@ enum Token
 };
 
 
-static int g_lookahead = TOK_INVALID;
-static t_value g_lookahead_val = 0;
-static char g_lookahead_text[MAX_IDENT];
-
-
-static t_value plus_term();
-static t_value plus_term_rest(t_value arg);
-static t_value mul_term();
-static t_value mul_term_rest(t_value arg);
-static t_value pow_term();
-static t_value pow_term_rest(t_value arg);
-static t_value factor();
+static t_value plus_term(struct ParserContext* ctx);
+static t_value plus_term_rest(struct ParserContext* ctx, t_value arg);
+static t_value mul_term(struct ParserContext* ctx);
+static t_value mul_term_rest(struct ParserContext* ctx, t_value arg);
+static t_value pow_term(struct ParserContext* ctx);
+static t_value pow_term_rest(struct ParserContext* ctx, t_value arg);
+static t_value factor(struct ParserContext* ctx);
 // ----------------------------------------------------------------------------
 
 
@@ -53,18 +46,6 @@ static t_value factor();
 // ----------------------------------------------------------------------------
 // symbol table
 // ----------------------------------------------------------------------------
-
-struct Symbol
-{
-	char name[MAX_IDENT];
-	t_value value;
-
-	struct Symbol* next;
-};
-
-
-static struct Symbol g_symboltable;
-
 
 struct Symbol* create_symbol(const char* name, t_value value)
 {
@@ -80,34 +61,9 @@ struct Symbol* create_symbol(const char* name, t_value value)
 }
 
 
-void init_symbols()
+struct Symbol* find_symbol(struct ParserContext* ctx, const char* name)
 {
-	my_strncpy(g_symboltable.name, "", MAX_IDENT);
-	g_symboltable.value = 0;
-
-	struct Symbol *sym = create_symbol("pi", M_PI);
-	g_symboltable.next = sym;
-}
-
-
-void deinit_symbols()
-{
-	struct Symbol *sym = g_symboltable.next;
-
-	while(sym)
-	{
-		struct Symbol *symnext = sym->next;
-		free(sym);
-		sym = symnext;
-	}
-
-	g_symboltable.next = 0;
-}
-
-
-struct Symbol* find_symbol(const char* name)
-{
-	struct Symbol* sym = &g_symboltable;
+	struct Symbol* sym = &ctx->symboltable;
 
 	while(sym)
 	{
@@ -121,9 +77,9 @@ struct Symbol* find_symbol(const char* name)
 }
 
 
-struct Symbol* assign_or_insert_symbol(const char* name, t_value value)
+struct Symbol* assign_or_insert_symbol(struct ParserContext* ctx, const char* name, t_value value)
 {
-	struct Symbol* sym = find_symbol(name);
+	struct Symbol* sym = find_symbol(ctx, name);
 
 	if(sym)
 	{
@@ -133,7 +89,7 @@ struct Symbol* assign_or_insert_symbol(const char* name, t_value value)
 	{
 		sym = create_symbol(name, value);
 
-		struct Symbol *table = &g_symboltable;
+		struct Symbol *table = &ctx->symboltable;
 		while(1)
 		{
 			if(table->next == 0)
@@ -150,9 +106,9 @@ struct Symbol* assign_or_insert_symbol(const char* name, t_value value)
 }
 
 
-void print_symbols()
+void print_symbols(struct ParserContext* ctx)
 {
-	const struct Symbol* sym = g_symboltable.next;
+	const struct Symbol* sym = ctx->symboltable.next;
 	char msg[512];
 	msg[0] = 0;
 
@@ -295,48 +251,43 @@ static int get_matching_token(const char* str, t_value* value)
 }
 
 
-static int g_input_idx = 0;
-static int g_input_len = 0;
-static const char* g_input = 0;
-
-
-static void set_input(const char* input)
+static void set_input(struct ParserContext* ctx, const char* input)
 {
-	g_input = input;
-	g_input_len = my_strlen(g_input);
-	g_input_idx = 0;
+	ctx->input = input;
+	ctx->input_len = my_strlen(ctx->input);
+	ctx->input_idx = 0;
 }
 
 
-static int input_get()
+static int input_get(struct ParserContext* ctx)
 {
-	if(g_input_idx >= g_input_len)
+	if(ctx->input_idx >= ctx->input_len)
 		return EOF;
 
-	return g_input[g_input_idx++];
+	return ctx->input[ctx->input_idx++];
 }
 
 
-static int input_peek()
+static int input_peek(struct ParserContext* ctx)
 {
-	if(g_input_idx >= g_input_len)
+	if(ctx->input_idx >= ctx->input_len)
 		return EOF;
 
-	return g_input[g_input_idx];
+	return ctx->input[ctx->input_idx];
 }
 
 
-static void input_putback(/*char c*/)
+static void input_putback(struct ParserContext* ctx)
 {
-	if(g_input_idx > 0)
-		--g_input_idx;
+	if(ctx->input_idx > 0)
+		--ctx->input_idx;
 }
 
 
 /**
  * @return token, yylval, yytext
  */
-static int lex(t_value* lval, char* text)
+static int lex(struct ParserContext* ctx, t_value* lval, char* text)
 {
 	char input[MAX_IDENT];
 	char longest_input[MAX_IDENT];
@@ -348,7 +299,7 @@ static int lex(t_value* lval, char* text)
 
 	while(1)
 	{
-		int c = input_get();
+		int c = input_get(ctx);
 		if(c == EOF)
 			break;
 
@@ -376,13 +327,13 @@ static int lex(t_value* lval, char* text)
 			longest_matching_token = matching;
 			longest_matching_value = matching_val;
 
-			if(input_peek()==EOF)
+			if(input_peek(ctx)==EOF)
 				break;
 		}
 		else
 		{
 			// no more matches
-			input_putback(/*c*/);
+			input_putback(ctx);
 			break;
 		}
 	}
@@ -425,17 +376,17 @@ static int lex(t_value* lval, char* text)
 // ----------------------------------------------------------------------------
 // lexer interface
 // ----------------------------------------------------------------------------
-static void next_lookahead()
+static void next_lookahead(struct ParserContext* ctx)
 {
-	g_lookahead = lex(&g_lookahead_val, g_lookahead_text);
+	ctx->lookahead = lex(ctx, &ctx->lookahead_val, ctx->lookahead_text);
 }
 
 
-static int match(int expected)
+static int match(struct ParserContext* ctx, int expected)
 {
-	if(g_lookahead != expected)
+	if(ctx->lookahead != expected)
 	{
-		printf("Could not match symbol! Expected: %d, got %d.\n", expected, g_lookahead);
+		printf("Could not match symbol! Expected: %d, got %d.\n", expected, ctx->lookahead);
 		return 0;
 	}
 
@@ -452,69 +403,69 @@ static int match(int expected)
  * +,- terms
  * (lowest precedence, 1)
  */
-static t_value plus_term()
+static t_value plus_term(struct ParserContext* ctx)
 {
 	// plus_term -> mul_term plus_term_rest
-	if(g_lookahead == '(' || g_lookahead == TOK_VALUE || g_lookahead == TOK_IDENT)
+	if(ctx->lookahead == '(' || ctx->lookahead == TOK_VALUE || ctx->lookahead == TOK_IDENT)
 	{
-		t_value term_val = mul_term();
-		t_value expr_rest_val = plus_term_rest(term_val);
+		t_value term_val = mul_term(ctx);
+		t_value expr_rest_val = plus_term_rest(ctx, term_val);
 
 		return expr_rest_val;
 	}
-	else if(g_lookahead == '+')	// unary +
+	else if(ctx->lookahead == '+')	// unary +
 	{
-		next_lookahead();
-		t_value term_val = mul_term();
-		t_value expr_rest_val = plus_term_rest(term_val);
+		next_lookahead(ctx);
+		t_value term_val = mul_term(ctx);
+		t_value expr_rest_val = plus_term_rest(ctx, term_val);
 
 		return expr_rest_val;
 	}
-	else if(g_lookahead == '-')	// unary -
+	else if(ctx->lookahead == '-')	// unary -
 	{
-		next_lookahead();
-		t_value term_val = -mul_term();
-		t_value expr_rest_val = plus_term_rest(term_val);
+		next_lookahead(ctx);
+		t_value term_val = -mul_term(ctx);
+		t_value expr_rest_val = plus_term_rest(ctx, term_val);
 
 		return expr_rest_val;
 	}
 
-	if(g_lookahead == 0 || g_lookahead == EOF)
+	if(ctx->lookahead == 0 || ctx->lookahead == EOF)
 		return 0;
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
 
-static t_value plus_term_rest(t_value arg)
+static t_value plus_term_rest(struct ParserContext* ctx, t_value arg)
 {
 	// plus_term_rest -> '+' mul_term plus_term_rest
-	if(g_lookahead == '+')
+	if(ctx->lookahead == '+')
 	{
-		next_lookahead();
-		t_value term_val = arg + mul_term();
-		t_value expr_rest_val = plus_term_rest(term_val);
+		next_lookahead(ctx);
+		t_value term_val = arg + mul_term(ctx);
+		t_value expr_rest_val = plus_term_rest(ctx, term_val);
 
 		return expr_rest_val;
 	}
 
 	// plus_term_rest -> '-' mul_term plus_term_rest
-	else if(g_lookahead == '-')
+	else if(ctx->lookahead == '-')
 	{
-		next_lookahead();
-		t_value term_val = arg - mul_term();
-		t_value expr_rest_val = plus_term_rest(term_val);
+		next_lookahead(ctx);
+		t_value term_val = arg - mul_term(ctx);
+		t_value expr_rest_val = plus_term_rest(ctx, term_val);
 
 		return expr_rest_val;
 	}
 	// plus_term_rest -> epsilon
-	else if(g_lookahead == ')' || g_lookahead == TOK_END || g_lookahead == ',')
+	else if(ctx->lookahead == ')' || ctx->lookahead == TOK_END || ctx->lookahead == ',')
 	{
 		return arg;
 	}
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
@@ -523,62 +474,62 @@ static t_value plus_term_rest(t_value arg)
  * *,/,% terms
  * (precedence 2)
  */
-static t_value mul_term()
+static t_value mul_term(struct ParserContext* ctx)
 {
 	// mul_term -> pow_term mul_term_rest
-	if(g_lookahead == '(' || g_lookahead == TOK_VALUE || g_lookahead == TOK_IDENT)
+	if(ctx->lookahead == '(' || ctx->lookahead == TOK_VALUE || ctx->lookahead == TOK_IDENT)
 	{
-		t_value factor_val = pow_term();
-		t_value term_rest_val = mul_term_rest(factor_val);
+		t_value factor_val = pow_term(ctx);
+		t_value term_rest_val = mul_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
 
-static t_value mul_term_rest(t_value arg)
+static t_value mul_term_rest(struct ParserContext* ctx, t_value arg)
 {
 	// mul_term_rest -> '*' pow_term mul_term_rest
-	if(g_lookahead == '*')
+	if(ctx->lookahead == '*')
 	{
-		next_lookahead();
-		t_value factor_val = arg * pow_term();
-		t_value term_rest_val = mul_term_rest(factor_val);
+		next_lookahead(ctx);
+		t_value factor_val = arg * pow_term(ctx);
+		t_value term_rest_val = mul_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
 	// mul_term_rest -> '/' pow_term mul_term_rest
-	else if(g_lookahead == '/')
+	else if(ctx->lookahead == '/')
 	{
-		next_lookahead();
-		t_value factor_val = arg / pow_term();
-		t_value term_rest_val = mul_term_rest(factor_val);
+		next_lookahead(ctx);
+		t_value factor_val = arg / pow_term(ctx);
+		t_value term_rest_val = mul_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
 	// mul_term_rest -> '%' pow_term mul_term_rest
-	else if(g_lookahead == '%')
+	else if(ctx->lookahead == '%')
 	{
-		next_lookahead();
-		t_value factor_val = fmod(arg, pow_term());
-		t_value term_rest_val = mul_term_rest(factor_val);
+		next_lookahead(ctx);
+		t_value factor_val = fmod(arg, pow_term(ctx));
+		t_value term_rest_val = mul_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
 	// mul_term_rest -> epsilon
-	else if(g_lookahead == '+' || g_lookahead == '-' || g_lookahead == ')'
-		|| g_lookahead == TOK_END || g_lookahead == ',')
+	else if(ctx->lookahead == '+' || ctx->lookahead == '-' || ctx->lookahead == ')'
+		|| ctx->lookahead == TOK_END || ctx->lookahead == ',')
 	{
 		return arg;
 	}
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
@@ -587,43 +538,43 @@ static t_value mul_term_rest(t_value arg)
  * ^ terms
  * (precedence 3)
  */
-static t_value pow_term()
+static t_value pow_term(struct ParserContext* ctx)
 {
 	// pow_term -> factor pow_term_rest
-	if(g_lookahead == '(' || g_lookahead == TOK_VALUE || g_lookahead == TOK_IDENT)
+	if(ctx->lookahead == '(' || ctx->lookahead == TOK_VALUE || ctx->lookahead == TOK_IDENT)
 	{
-		t_value factor_val = factor();
-		t_value term_rest_val = pow_term_rest(factor_val);
+		t_value factor_val = factor(ctx);
+		t_value term_rest_val = pow_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
 
-static t_value pow_term_rest(t_value arg)
+static t_value pow_term_rest(struct ParserContext* ctx, t_value arg)
 {
 	// pow_term_rest -> '^' factor pow_term_rest
-	if(g_lookahead == '^')
+	if(ctx->lookahead == '^')
 	{
-		next_lookahead();
-		t_value factor_val = pow(arg, factor());
-		t_value term_rest_val = pow_term_rest(factor_val);
+		next_lookahead(ctx);
+		t_value factor_val = pow(arg, factor(ctx));
+		t_value term_rest_val = pow_term_rest(ctx, factor_val);
 
 		return term_rest_val;
 	}
 
 	// pow_term_rest -> epsilon
-	else if(g_lookahead == '+' || g_lookahead == '-' || g_lookahead == ')'
-		|| g_lookahead == TOK_END || g_lookahead == ','
-		|| g_lookahead == '*' || g_lookahead == '/' || g_lookahead == '%')
+	else if(ctx->lookahead == '+' || ctx->lookahead == '-' || ctx->lookahead == ')'
+		|| ctx->lookahead == TOK_END || ctx->lookahead == ','
+		|| ctx->lookahead == '*' || ctx->lookahead == '/' || ctx->lookahead == '%')
 	{
 		return arg;
 	}
 
-	printf("Invalid lookahead in %s: %d.\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: %d.\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
@@ -632,47 +583,47 @@ static t_value pow_term_rest(t_value arg)
  * () terms, real factor or identifier
  * (highest precedence, 4)
  */
-static t_value factor()
+static t_value factor(struct ParserContext* ctx)
 {
 	// factor -> '(' plus_term ')'
-	if(g_lookahead == '(')
+	if(ctx->lookahead == '(')
 	{
-		next_lookahead();
-		t_value expr_val = plus_term();
-		match(')');
-		next_lookahead();
+		next_lookahead(ctx);
+		t_value expr_val = plus_term(ctx);
+		match(ctx, ')');
+		next_lookahead(ctx);
 
 		return expr_val;
 	}
 
 	// factor -> TOK_VALUE
-	else if(g_lookahead == TOK_VALUE)
+	else if(ctx->lookahead == TOK_VALUE)
 	{
-		t_value val = g_lookahead_val;
-		next_lookahead();
+		t_value val = ctx->lookahead_val;
+		next_lookahead(ctx);
 
 		return val;
 	}
 
 	// factor -> TOK_IDENT
-	else if(g_lookahead == TOK_IDENT)
+	else if(ctx->lookahead == TOK_IDENT)
 	{
 		char ident[MAX_IDENT];
-		my_strncpy(ident, g_lookahead_text, MAX_IDENT);
+		my_strncpy(ident, ctx->lookahead_text, MAX_IDENT);
 
-		next_lookahead();
+		next_lookahead(ctx);
 
 		// function call
-		// using next g_lookahead, grammar still ll(1)?
-		if(g_lookahead == '(')
+		// using next ctx->lookahead, grammar still ll(1)?
+		if(ctx->lookahead == '(')
 		{
-			next_lookahead();
+			next_lookahead(ctx);
 
 			// 0-argument function
 			// factor -> TOK_IDENT '(' ')'
-			if(g_lookahead == ')')
+			if(ctx->lookahead == ')')
 			{
-				next_lookahead();
+				next_lookahead(ctx);
 
 				// TODO
 				//auto iter = m_mapFuncs0.find(ident);
@@ -689,13 +640,13 @@ static t_value factor()
 			else
 			{
 				// first argument
-				t_value expr_val1 = plus_term();
+				t_value expr_val1 = plus_term(ctx);
 
 				// one-argument-function
 				// factor -> TOK_IDENT '(' plus_term ')'
-				if(g_lookahead == ')')
+				if(ctx->lookahead == ')')
 				{
-					next_lookahead();
+					next_lookahead(ctx);
 
 					if(my_strncmp(ident, "sqrt", MAX_IDENT)==0)
 					{
@@ -746,12 +697,12 @@ static t_value factor()
 
 				// two-argument-function
 				// factor -> TOK_IDENT '(' plus_term ',' plus_term ')'
-				else if(g_lookahead == ',')
+				else if(ctx->lookahead == ',')
 				{
-					next_lookahead();
-					t_value expr_val2 = plus_term();
-					match(')');
-					next_lookahead();
+					next_lookahead(ctx);
+					t_value expr_val2 = plus_term(ctx);
+					match(ctx, ')');
+					next_lookahead(ctx);
 
 					if(my_strncmp(ident, "atan2", MAX_IDENT)==0)
 					{
@@ -775,18 +726,18 @@ static t_value factor()
 		}
 
 		// assignment
-		else if(g_lookahead == '=')
+		else if(ctx->lookahead == '=')
 		{
-			next_lookahead();
-			t_value assign_val = plus_term();
-			assign_or_insert_symbol(ident, assign_val);
+			next_lookahead(ctx);
+			t_value assign_val = plus_term(ctx);
+			assign_or_insert_symbol(ctx, ident, assign_val);
 			return assign_val;
 		}
 
 		// variable lookup
 		else
 		{
-			const struct Symbol* sym = find_symbol(ident);
+			const struct Symbol* sym = find_symbol(ctx, ident);
 			if(!sym)
 			{
 				printf("Unknown identifier \"%s\".\n", ident);
@@ -797,17 +748,67 @@ static t_value factor()
 		}
 	}
 
-	printf("Invalid lookahead in %s: \"%d\".\n", __func__, g_lookahead);
+	printf("Invalid lookahead in %s: \"%d\".\n", __func__, ctx->lookahead);
 	return 0.;
 }
 
-
-
-t_value parse(const char* str)
-{
-	set_input(str);
-	next_lookahead();
-	return plus_term();
-}
 // ------------------------------------------------------------------------
 
+
+
+// ----------------------------------------------------------------------------
+// parser interface
+// ----------------------------------------------------------------------------
+
+void init_parser(struct ParserContext* ctx)
+{
+	ctx->lookahead = TOK_INVALID;
+	ctx->lookahead_val = 0;
+	ctx->lookahead_text[0] = 0;
+
+	ctx->input_idx = 0;
+	ctx->input_len = 0;
+	ctx->input = 0;
+
+	my_strncpy(ctx->symboltable.name, "", MAX_IDENT);
+	ctx->symboltable.value = 0;
+
+	struct Symbol *sym = create_symbol("pi", M_PI);
+	ctx->symboltable.next = sym;
+}
+
+
+void deinit_parser(struct ParserContext* ctx)
+{
+	struct Symbol *sym = ctx->symboltable.next;
+
+	while(sym)
+	{
+		struct Symbol *symnext = sym->next;
+		free(sym);
+		sym = symnext;
+	}
+
+	ctx->symboltable.next = 0;
+}
+
+
+t_value parse(struct ParserContext* ctx, const char* str)
+{
+	set_input(ctx, str);
+	next_lookahead(ctx);
+	return plus_term(ctx);
+}
+// ----------------------------------------------------------------------------
+
+
+/* // test: gcc -Wall -Wextra -o 0 expr_parser.c string.c -lm
+int main()
+{
+	struct ParserContext ctx;
+	init_parser(&ctx);
+	printf("%g\n", parse(&ctx, "123 + 500*2"));
+	deinit_parser(&ctx);
+
+	return 0;
+}*/

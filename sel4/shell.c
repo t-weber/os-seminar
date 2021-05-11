@@ -30,8 +30,8 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 	i32 x=x_min, y=y_min;
 	i32 x_prev=x, y_prev=y;
 
-	// init parser
-	init_symbols();
+	struct ParserContext ctx;
+	init_parser(&ctx);
 
 	clear_scr(ATTR_NORM, charout, SCREEN_SIZE);
 	write_str("Seminar 1914             seL4 Calculator Shell ver. 0.2                   tweber",
@@ -59,7 +59,7 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 			// read current line
 			i8 line[SCREEN_COL_SIZE+1];
 			read_str(line, charout+y*SCREEN_COL_SIZE*2 + x_min*2, SCREEN_COL_SIZE);
-			t_value val = parse(line);
+			t_value val = parse(&ctx, line);
 
 			i8 outnumbuf[64];
 			int_to_str(output_num, 10, outnumbuf);
@@ -177,8 +177,7 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 		}
 	}
 
-	// deinit parser
-	deinit_symbols();
+	deinit_parser(&ctx);
 
 	printf("End of calculator thread.\n");
 	while(1) seL4_Yield();
