@@ -199,8 +199,8 @@ seL4_SlotPos map_page_phys(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 }
 
 
-seL4_SlotPos get_slot(word_t obj, word_t obj_size, 
-	seL4_SlotPos untyped_start, seL4_SlotPos untyped_end, const seL4_UntypedDesc* untyped_list, 
+seL4_SlotPos get_slot(word_t obj, word_t obj_size,
+	seL4_SlotPos untyped_start, seL4_SlotPos untyped_end, const seL4_UntypedDesc* untyped_list,
 	seL4_SlotPos* cur_slot, seL4_SlotPos cnode)
 {
 	seL4_SlotPos slot = find_untyped(untyped_start, untyped_end, untyped_list, obj_size);
@@ -317,12 +317,9 @@ i64 main()
 	// create semaphores for thread signalling
 	seL4_SlotPos tcb_startnotify = get_slot(seL4_NotificationObject, 1<<seL4_NotificationBits,
 		untyped_start, untyped_end, untyped_list, &cur_slot, this_cnode);
-	//seL4_SlotPos keyb_notify = get_slot(seL4_NotificationObject, 1<<seL4_NotificationBits,
-	//	untyped_start, untyped_end, untyped_list, &cur_slot, this_cnode);
 	seL4_SlotPos tcb_endpoint = get_slot(seL4_EndpointObject, 1<<seL4_EndpointBits,
 		untyped_start, untyped_end, untyped_list, &cur_slot, this_cnode);
 	seL4_TCB_BindNotification(this_tcb, tcb_startnotify);
-	//seL4_TCB_BindNotification(tcb, keyb_notify);
 
 	// get badged versions of these objects
 	word_t tcb_badge = CALCTHREAD_BADGE;
