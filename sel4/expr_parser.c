@@ -153,16 +153,28 @@ struct Symbol* assign_or_insert_symbol(const char* name, t_value value)
 void print_symbols()
 {
 	const struct Symbol* sym = g_symboltable.next;
+	char msg[512];
+	msg[0] = 0;
 
 	while(sym)
 	{
+		my_strncat(msg, "\t", sizeof(msg));
+		my_strncat(msg, sym->name, sizeof(msg));
+		my_strncat(msg, " = ", sizeof(msg));
+		char val[64];
+
 #ifdef USE_INTEGER
-		printf("%s = %d\n", sym->name, sym->value);
+		int_to_str(sym->value, 10, val);
 #else
-		printf("%s = %g\n", sym->name, sym->value);
+		real_to_str(sym->value, 10, val, 8);
 #endif
+
+		my_strncat(msg, val, sizeof(msg));
+		my_strncat(msg, "\n", sizeof(msg));
 		sym = sym->next;
 	}
+
+	printf("Symbol table:\n%s", msg);
 }
 // ------------------------------------------------------------------------
 

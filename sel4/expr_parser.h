@@ -14,7 +14,7 @@
 #define __EXPR_PARSER_H__
 
 
-#define USE_INTEGER
+//#define USE_INTEGER
 #ifdef USE_INTEGER
 	typedef int t_value;
 #else

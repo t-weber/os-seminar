@@ -37,6 +37,7 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 	write_str("Seminar 1914             seL4 Calculator Shell ver. 0.2                   tweber",
 		ATTR_INV, charout);
 
+	u64 output_num = 1;
 	while(1)
 	{
 		// cursor
@@ -60,8 +61,20 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 			read_str(line, charout+y*SCREEN_COL_SIZE*2 + x_min*2, SCREEN_COL_SIZE);
 			t_value val = parse(line);
 
-			i8 numbuf[32];
-			int_to_str(val, 10, numbuf);
+			i8 outnumbuf[64];
+			int_to_str(output_num, 10, outnumbuf);
+
+			i8 numbuf[64];
+			my_strncpy(numbuf, "[out ", sizeof(numbuf));
+			my_strncat(numbuf, outnumbuf, sizeof(numbuf));
+			my_strncat(numbuf, "] ", sizeof(numbuf));
+			u64 numbuf_idx = my_strlen(numbuf);
+
+#ifdef USE_INTEGER
+			int_to_str(val, 10, numbuf+numbuf_idx);
+#else
+			real_to_str(val, 10, numbuf+numbuf_idx, 8);
+#endif
 			write_str(numbuf, ATTR_BOLD, charout + (y+1)*SCREEN_COL_SIZE*2 + x_min*2);
 
 			print_symbols();
@@ -69,6 +82,7 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 			// new line
 			y += 2;
 			x = x_min;
+			++output_num;
 
 			// scroll
 			if(y >= SCREEN_ROW_SIZE - 2)
@@ -101,81 +115,65 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 			u64 num = key - 0x01;
 			if(num == 10)
 				num = 0;
+
+			i8 ch = 0;
+
 			if(num >= 0 && num <= 9)
-				write_char((i8)(num+0x30), ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x39)	// space
-				write_char(' ', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x27 || key == 0x0d)	// +
-				write_char('+', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x28 || key == 0x0c)	// -
-				write_char('-', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x34)	// *
-				write_char('*', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x28 || key == 0x35)	// /
-				write_char('/', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x29)	// ^
-				write_char('^', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x1a)	// (
-				write_char('(', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x1b)	// )
-				write_char(')', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x2b || key == 0x33)	// =
-				write_char('=', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x10)	// q
-				write_char('q', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x11)	// w
-				write_char('w', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x12)	// e
-				write_char('e', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x13)	// r
-				write_char('r', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x14)	// t
-				write_char('t', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x15)	// y
-				write_char('y', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x16)	// u
-				write_char('u', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x17)	// i
-				write_char('i', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x18)	// o
-				write_char('o', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x19)	// p
-				write_char('p', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x1e)	// a
-				write_char('a', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x1f)	// s
-				write_char('s', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x20)	// d
-				write_char('d', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x21)	// f
-				write_char('f', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x22)	// g
-				write_char('g', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x23)	// h
-				write_char('h', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x24)	// j
-				write_char('j', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x25)	// k
-				write_char('k', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x26)	// l
-				write_char('l', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x2c)	// z
-				write_char('z', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x2d)	// x
-				write_char('x', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x2e)	// c
-				write_char('c', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x2f)	// v
-				write_char('v', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x30)	// b
-				write_char('b', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x31)	// n
-				write_char('n', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
-			else if(key == 0x32)	// m
-				write_char('m', ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
+				ch = (i8)(num+0x30);
 			else
-				continue;
-			++x;
+			{
+				switch(key)
+				{
+					case 0x39: ch = ' '; break;
+					case 0x34: ch = '.'; break;
+					case 0x33: ch = ','; break;
+
+					case 0x0d: ch = '+'; break;
+					case 0x0c: ch = '-'; break;
+					case 0x28: ch = '*'; break;
+					case 0x35: ch = '/'; break;
+					case 0x29: ch = '^'; break;
+
+					case 0x1a: ch = '('; break;
+					case 0x1b: ch = ')'; break;
+					case 0x2b: ch = '='; break;
+
+					case 0x10: ch = 'q'; break;
+					case 0x11: ch = 'w'; break;
+					case 0x12: ch = 'e'; break;
+					case 0x13: ch = 'r'; break;
+					case 0x14: ch = 't'; break;
+					case 0x15: ch = 'y'; break;
+					case 0x16: ch = 'u'; break;
+					case 0x17: ch = 'i'; break;
+					case 0x18: ch = 'o'; break;
+					case 0x19: ch = 'p'; break;
+
+					case 0x1e: ch = 'a'; break;
+					case 0x1f: ch = 's'; break;
+					case 0x20: ch = 'd'; break;
+					case 0x21: ch = 'f'; break;
+					case 0x22: ch = 'g'; break;
+					case 0x23: ch = 'h'; break;
+					case 0x24: ch = 'j'; break;
+					case 0x25: ch = 'k'; break;
+					case 0x26: ch = 'l'; break;
+
+					case 0x2c: ch = 'z'; break;
+					case 0x2d: ch = 'x'; break;
+					case 0x2e: ch = 'c'; break;
+					case 0x2f: ch = 'v'; break;
+					case 0x30: ch = 'b'; break;
+					case 0x31: ch = 'n'; break;
+					case 0x32: ch = 'm'; break;
+				}
+			}
+
+			if(ch)
+			{
+				write_char(ch, ATTR_NORM, charout + y*SCREEN_COL_SIZE*2 + x*2);
+				++x;
+			}
 		}
 	}
 
@@ -185,3 +183,4 @@ void run_calc_shell(seL4_SlotPos start_notify, i8 *charout, seL4_SlotPos endpoin
 	printf("End of calculator thread.\n");
 	while(1) seL4_Yield();
 }
+

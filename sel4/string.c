@@ -117,7 +117,7 @@ void real_to_str(f64 num, u64 base, i8* buf, u8 decimals)
 	uint_to_str((u64)num, base, buf+idx);
 
 	// get number after decimal point
-	char buf_decimals[64];
+	i8 buf_decimals[64];
 	for(u8 dec=0; dec<decimals; ++dec)
 	{
 		// strip away digits before decimal point
@@ -403,7 +403,7 @@ void clear_scr(u8 attrib, i8 *addr, u64 size)
 #include <stdio.h>
 int main()
 {
-	char buf[64];
+	i8 buf[64];
 	real_to_str(-987.01020300, 10, buf, 10);
 	puts(buf);
 }
