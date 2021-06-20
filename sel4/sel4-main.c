@@ -280,7 +280,9 @@ i64 main()
 	seL4_SlotPos cur_slot = empty_start;
 	seL4_SlotPos cur_untyped_slot = untyped_start;
 
+#if SERIAL_DEBUG != 0
 	print_slots(untyped_start, untyped_end, untyped_list);
+#endif
 	// ------------------------------------------------------------------------
 
 
