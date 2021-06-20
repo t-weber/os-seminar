@@ -35,7 +35,34 @@ struct Keyboard
 
 
 /**
+ * print slot usage
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
+ */
+void print_slots(seL4_SlotPos start, seL4_SlotPos end, const seL4_UntypedDesc* list)
+{
+	printf("\nUntyped capability slots:\n");
+	printf("Slot       Size             Physical Address      Device\n");
+
+	for(seL4_SlotPos cur_slot=start; cur_slot<end; ++cur_slot)
+	{
+		const seL4_UntypedDesc *descr = list + (cur_slot-start);
+
+		word_t size = (1 << descr->sizeBits);
+		word_t addr_start = descr->paddr;
+		word_t addr_end = addr_start + size;
+		u8 is_dev = descr->isDevice;
+
+		printf("0x%-8lx %-16ld 0x%016lx %4d\n",
+			cur_slot, size, addr_start, is_dev);
+	}
+
+	printf("\n");
+}
+
+
+/**
  * find a free untyped slot
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
  */
 seL4_SlotPos find_untyped(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, word_t needed_size)
@@ -43,16 +70,13 @@ seL4_SlotPos find_untyped(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	for(seL4_SlotPos cur_slot=untyped_start; cur_slot<untyped_end; ++cur_slot)
 	{
 		const seL4_UntypedDesc *cur_descr = untyped_list + (cur_slot-untyped_start);
-
 		if(cur_descr->isDevice)
 			continue;
 
-		word_t cur_size = (1<< cur_descr->sizeBits);
-
-		//printf("Untyped slot 0x%lx: size=%ld, physical address=0x%lx.\n",
-		//	cur_slot, cur_size, cur_descr->paddr);
+		word_t cur_size = (1 << cur_descr->sizeBits);
 		if(cur_size < needed_size)
 			continue;
+
 		return cur_slot;
 	}
 
@@ -61,7 +85,8 @@ seL4_SlotPos find_untyped(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 
 
 /**
- * find device memory region which has the given address
+ * find the capability slot for a device memory region which has the given address
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
  */
 seL4_SlotPos find_devicemem(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, word_t addr)
@@ -69,7 +94,6 @@ seL4_SlotPos find_devicemem(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end
 	for(seL4_SlotPos cur_slot=untyped_start; cur_slot<untyped_end; ++cur_slot)
 	{
 		const seL4_UntypedDesc *cur_descr = untyped_list + (cur_slot-untyped_start);
-
 		if(!cur_descr->isDevice)
 			continue;
 
@@ -77,8 +101,6 @@ seL4_SlotPos find_devicemem(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end
 		word_t addr_start = cur_descr->paddr;
 		word_t addr_end = addr_start + size;
 
-		//printf("Untyped device slot 0x%lx: physical addresses=[0x%lx..0x%lx[.\n",
-		//	cur_slot, cur_descr->paddr, addr_end);
 		if(addr >= addr_start && addr < addr_end)
 			return cur_slot;
 	}
@@ -87,6 +109,10 @@ seL4_SlotPos find_devicemem(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end
 }
 
 
+/**
+ * map page directory pointer table, page directory and page table
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/mapping/mapping.md
+ */
 void map_pagetables(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, seL4_SlotPos* cur_slot,
 	word_t virt_addr)
@@ -133,6 +159,10 @@ void map_pagetables(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 }
 
 
+/**
+ * map a page into a given virtual address
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/mapping/mapping.md
+ */
 seL4_SlotPos map_page(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, seL4_SlotPos* cur_slot,
 	word_t virt_addr)
@@ -161,6 +191,10 @@ seL4_SlotPos map_page(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 }
 
 
+/**
+ * map a given physical address into a given virtual address
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/mapping/mapping.md
+ */
 seL4_SlotPos map_page_phys(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, seL4_SlotPos* cur_slot,
 	word_t virt_addr, word_t phys_addr)
@@ -199,6 +233,10 @@ seL4_SlotPos map_page_phys(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 }
 
 
+/**
+ * finds a free capability slot and retypes it
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
+ */
 seL4_SlotPos get_slot(word_t obj, word_t obj_size,
 	seL4_SlotPos untyped_start, seL4_SlotPos untyped_end, const seL4_UntypedDesc* untyped_list,
 	seL4_SlotPos* cur_slot, seL4_SlotPos cnode)
@@ -217,13 +255,16 @@ i64 main()
 
 	// ------------------------------------------------------------------------
 	// initial thread and boot infos
+	// ------------------------------------------------------------------------
 	const seL4_SlotPos this_cnode = seL4_CapInitThreadCNode;
 	const seL4_SlotPos this_vspace = seL4_CapInitThreadVSpace;
 	const seL4_SlotPos this_tcb = seL4_CapInitThreadTCB;
 	const seL4_SlotPos this_ipcbuf = seL4_CapInitThreadIPCBuffer;
 	const seL4_SlotPos this_irqctrl = seL4_CapIRQControl;
 	const seL4_SlotPos this_ioctrl = seL4_CapIOPortControl;
+
 	const seL4_BootInfo *bootinfo = platsupport_get_bootinfo();
+	const seL4_IPCBuffer *this_ipcbuffer = bootinfo->ipcBuffer;
 
 	const seL4_SlotRegion *empty_region = &bootinfo->empty;
 	const seL4_SlotPos empty_start = empty_region->start;
@@ -238,11 +279,14 @@ i64 main()
 
 	seL4_SlotPos cur_slot = empty_start;
 	seL4_SlotPos cur_untyped_slot = untyped_start;
+
+	print_slots(untyped_start, untyped_end, untyped_list);
 	// ------------------------------------------------------------------------
 
 
 	// ------------------------------------------------------------------------
 	// (arbitrary) virtual addresses to map page tables, video ram and the TCB stack into
+	// ------------------------------------------------------------------------
 	word_t virt_addr_tables = 0x8000000000;
 	word_t virt_addr_char = 0x8000001000;
 	word_t virt_addr_tcb_stack = 0x8000002000;
@@ -260,28 +304,8 @@ i64 main()
 
 
 	// ------------------------------------------------------------------------
-	// keyboard interrupt service routine
-	struct Keyboard keyb;
-
-	// keyboard interrupt
-	keyb.keyb_slot = cur_slot++;
-	if(seL4_X86_IOPortControl_Issue(this_ioctrl, KEYB_DATA_PORT, KEYB_DATA_PORT,
-		this_cnode, keyb.keyb_slot, seL4_WordBits) != seL4_NoError)
-		printf("Error getting keyboard IO control!\n");
-
-	keyb.irq_slot = cur_slot++;
-	//seL4_IRQControl_Get(this_irqctrl, KEYB_IRQ, this_cnode, keyb.irq_slot, seL4_WordBits);
-	if(seL4_IRQControl_GetIOAPIC(this_irqctrl, this_cnode, keyb.irq_slot,
-		seL4_WordBits, KEYB_PIC, KEYB_IRQ, 0, 1, KEYB_INT) != seL4_NoError)
-		printf("Error getting keyboard interrupt control!\n");
-
-	keyb.irq_notify = get_slot(seL4_NotificationObject, 1<<seL4_NotificationBits,
-		untyped_start, untyped_end, untyped_list, &cur_slot, this_cnode);
-	if(seL4_IRQHandler_SetNotification(keyb.irq_slot, keyb.irq_notify) != seL4_NoError)
-		printf("Error setting keyboard interrupt notification!\n");
-	// ------------------------------------------------------------------------
-
-
+	// start shell thread
+	// @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/threads/threads.md
 	// ------------------------------------------------------------------------
 	// create a page frame for the thread's stack
 	seL4_SlotPos page_slot_tcb_stack = map_page(untyped_start, untyped_end,
@@ -308,7 +332,7 @@ i64 main()
 	if(seL4_TCB_SetIPCBuffer(tcb, virt_addr_tcb_ipcbuf, page_slot_tcb_ipcbuf) != seL4_NoError)
 		printf("Error: Cannot set TCB IPC buffer!\n");
 
-	*(seL4_IPCBuffer**)virt_addr_tcb_tls = __sel4_ipc_buffer;
+	*(const seL4_IPCBuffer**)virt_addr_tcb_tls = this_ipcbuffer /*__sel4_ipc_buffer*/;
 
 	// doesn't seem to get scheduled otherwise...
 	if(seL4_TCB_SetPriority(tcb, this_tcb, seL4_MaxPrio) != seL4_NoError)
@@ -353,14 +377,37 @@ i64 main()
 	// write registers and start thread
 	if(seL4_TCB_WriteRegisters(tcb, 1, 0, num_regs, &tcb_context) != seL4_NoError)
 		printf("Error writing TCB registers!\n");
-	// ------------------------------------------------------------------------
 
 	printf("Waiting for thread to start...\n");
 	word_t start_badge;
 	seL4_Wait(tcb_startnotify, &start_badge);
 	printf("Thread started, badge: %ld.\n", start_badge);
+	// ------------------------------------------------------------------------
 
-	// keyboard isr
+
+	// ------------------------------------------------------------------------
+	// keyboard interrupt service routine
+	// @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/interrupts/interrupts.md
+	// ------------------------------------------------------------------------
+	struct Keyboard keyb;
+
+	// keyboard interrupt
+	keyb.keyb_slot = cur_slot++;
+	if(seL4_X86_IOPortControl_Issue(this_ioctrl, KEYB_DATA_PORT, KEYB_DATA_PORT,
+		this_cnode, keyb.keyb_slot, seL4_WordBits) != seL4_NoError)
+		printf("Error getting keyboard IO control!\n");
+
+	keyb.irq_slot = cur_slot++;
+	//seL4_IRQControl_Get(this_irqctrl, KEYB_IRQ, this_cnode, keyb.irq_slot, seL4_WordBits);
+	if(seL4_IRQControl_GetIOAPIC(this_irqctrl, this_cnode, keyb.irq_slot,
+		seL4_WordBits, KEYB_PIC, KEYB_IRQ, 0, 1, KEYB_INT) != seL4_NoError)
+		printf("Error getting keyboard interrupt control!\n");
+
+	keyb.irq_notify = get_slot(seL4_NotificationObject, 1<<seL4_NotificationBits,
+		untyped_start, untyped_end, untyped_list, &cur_slot, this_cnode);
+	if(seL4_IRQHandler_SetNotification(keyb.irq_slot, keyb.irq_notify) != seL4_NoError)
+		printf("Error setting keyboard interrupt notification!\n");
+
 	while(1)
 	{
 		seL4_Wait(keyb.irq_notify, 0);
@@ -381,6 +428,7 @@ i64 main()
 			seL4_Call(tcb_endpoint2, seL4_MessageInfo_new(0,0,0,1));
 		}
 	}
+	// ------------------------------------------------------------------------
 
 
 	// ------------------------------------------------------------------------
@@ -390,6 +438,9 @@ i64 main()
 	seL4_CNode_Revoke(this_cnode, page_slot, seL4_WordBits);
 
 	printf("--------------------------------------------------------------------------------\n");
+	printf("Main thread has ended.\n");
 	while(1) seL4_Yield();
+	// ------------------------------------------------------------------------
+
 	return 0;
 }

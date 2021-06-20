@@ -8,6 +8,7 @@
  * References:
  *	- https://www.cs.uaf.edu/~cs331/notes/FirstFollow.pdf
  *	- https://de.wikipedia.org/wiki/LL(k)-Grammatik
+ *	- "Übersetzerbau", ISBN: 978-3540653899 (1999, 2013)
  */
 
 #ifndef __EXPR_PARSER_H__
