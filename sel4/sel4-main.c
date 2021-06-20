@@ -43,6 +43,9 @@ void print_slots(seL4_SlotPos start, seL4_SlotPos end, const seL4_UntypedDesc* l
 	printf("\nUntyped capability slots:\n");
 	printf("Slot       Size             Physical Address      Device\n");
 
+	u64 total_devmem = 0;
+	u64 total_nondevmem = 0;
+
 	for(seL4_SlotPos cur_slot=start; cur_slot<end; ++cur_slot)
 	{
 		const seL4_UntypedDesc *descr = list + (cur_slot-start);
@@ -52,11 +55,29 @@ void print_slots(seL4_SlotPos start, seL4_SlotPos end, const seL4_UntypedDesc* l
 		word_t addr_end = addr_start + size;
 		u8 is_dev = descr->isDevice;
 
-		printf("0x%-8lx %-16ld 0x%016lx %4d\n",
-			cur_slot, size, addr_start, is_dev);
+		i8 size_str[64];
+		write_size(size, size_str, sizeof(size_str));
+
+		if(is_dev)
+			total_devmem += size;
+		else
+			total_nondevmem += size;
+
+		printf("0x%-8lx %-16s 0x%016lx %4d\n",
+			cur_slot, size_str, addr_start, is_dev);
 	}
 
-	printf("\n");
+	i8 total_devmem_str[64];
+	i8 total_nondevmem_str[64];
+	i8 total_mem_str[64];
+
+	write_size(total_devmem, total_devmem_str, sizeof(total_devmem_str));
+	write_size(total_nondevmem, total_nondevmem_str, sizeof(total_nondevmem_str));
+	write_size(total_devmem + total_nondevmem, total_mem_str, sizeof(total_mem_str));
+
+	printf("\nTotal untyped device memory size:     %s.\n", total_devmem_str);
+	printf("Total untyped non-device memory size: %s.\n", total_nondevmem_str);
+	printf("Total untyped size:                   %s.\n\n", total_mem_str);
 }
 
 

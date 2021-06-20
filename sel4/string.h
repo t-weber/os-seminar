@@ -59,4 +59,6 @@ extern void write_str(i8 *str, u8 attrib, i8 *addr);
 extern void read_str(i8 *str, const i8 *addr, u32 len);
 extern void clear_scr(u8 attrib, i8 *addr, u64 size);
 
+void write_size(u64 size, i8* str, u64 max_len);
+
 #endif

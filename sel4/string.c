@@ -399,12 +399,40 @@ void clear_scr(u8 attrib, i8 *addr, u64 size)
 }
 
 
-/* // test
-#include <stdio.h>
+/**
+ * print a byte size
+ */
+void write_size(u64 size, i8* str, u64 max_len)
+{
+	const u64 sizes[4] = { 1024*1024*1024, 1024*1024, 1024, 1 };
+	const i8* size_names[4] = { " GB ", " MB ", " kB ", " B" };
+
+	for(u16 i=0; i<sizeof(sizes)/sizeof(*sizes); ++i)
+	{
+		u16 sz = size / sizes[i];
+		size %= sizes[i];
+
+		if(!sz)
+			continue;
+
+		uint_to_str(sz, 10, str);
+		my_strncat(str, size_names[i], max_len);
+		u64 len = my_strlen(str);
+		str += len;
+		max_len -= len;
+	}
+}
+
+
+// test
+/*#include <stdio.h>
 int main()
 {
 	i8 buf[64];
 	real_to_str(-987.01020300, 10, buf, 10);
 	puts(buf);
-}
-*/
+
+	i8 buf2[64];
+	write_size(5*1024*1024 + 4*1024 + 3, buf2, sizeof(buf2));
+	puts(buf2);
+}*/
