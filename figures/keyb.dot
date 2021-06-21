@@ -1,0 +1,37 @@
+#
+# seL4 demo
+#
+# @author Tobias Weber
+# @date jun-2021
+# @license GPLv3, see 'LICENSE' file
+#
+# dot -Tpdf keyb.dot > keyb.pdf
+#
+
+digraph keyb_isr
+{
+	// vertices
+	init_port [ label="X86_IOPortControl_Issue(port)"; shape=rect; ]
+	init_int [ label="IRQControl_GetIOAPIC(pic, irq)\nIRQHandler_SetNotification(irq_notify)"; shape=rect; ]
+	wait_int [ label="Wait(irq_notify)"; shape=rect; ]
+	finished_init [ label="Starte Tastatur-ISR", shape=rect; ]
+	isr [ label="key = X86_IOPort_In8(port)\nIRQHandler_Ack()"; shape=rect; ]
+	ipc [ label="SetMR(key)\nCall(badged endpoint)"; shape=rect; ]
+
+	// edges
+	init_port -> finished_init:e
+	init_int -> finished_init:w
+	finished_init -> wait_int
+	wait_int -> isr
+	isr -> ipc
+	ipc -> wait_int
+
+	// ranks
+	{ rank = same; init_port; init_int; }
+	{ rank = same; finished_init; }
+	{ rank = same; wait_int; }
+	{ rank = same; isr; ipc; }
+
+	// options
+	splines = true;
+}
