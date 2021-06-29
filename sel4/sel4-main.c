@@ -88,6 +88,7 @@ void print_slots(seL4_SlotPos start, seL4_SlotPos end, const seL4_UntypedDesc* l
 /**
  * find a free untyped slot
  * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/libsel4tutorials/src/alloc.c
  */
 seL4_SlotPos find_untyped(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 	const seL4_UntypedDesc* untyped_list, word_t needed_size)
@@ -261,6 +262,7 @@ seL4_SlotPos map_page_phys(seL4_SlotPos untyped_start, seL4_SlotPos untyped_end,
 /**
  * finds a free capability slot and retypes it
  * @see https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
+ * @see https://github.com/seL4/sel4-tutorials/blob/master/libsel4tutorials/src/alloc.c
  */
 seL4_SlotPos get_slot(word_t obj, word_t obj_size,
 	seL4_SlotPos untyped_start, seL4_SlotPos untyped_end, const seL4_UntypedDesc* untyped_list,
