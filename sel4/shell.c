@@ -12,6 +12,10 @@
  *   - https://github.com/seL4/sel4-tutorials/blob/master/tutorials/dynamic-2/dynamic-2.md
  *   - https://github.com/seL4/sel4-tutorials/blob/master/libsel4tutorials/src/alloc.c
  *   - https://docs.sel4.systems/projects/sel4/api-doc.html
+ * 
+ * Licenses:
+ *   - seL4 Tutorials License URL: https://github.com/seL4/sel4-tutorials/tree/master/LICENSES
+ *   - seL4 Kernel License URL: https://github.com/seL4/seL4/blob/master/LICENSE.md    
  */
 
 #include "shell.h"
