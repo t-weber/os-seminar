@@ -4,7 +4,7 @@
  * @date apr-2021
  * @license GPLv3, see 'LICENSE' file
  *
- * References:
+ * References for seL4:
  *   - https://github.com/seL4/sel4-tutorials/blob/master/tutorials/mapping/mapping.md
  *   - https://github.com/seL4/sel4-tutorials/blob/master/tutorials/untyped/untyped.md
  *   - https://github.com/seL4/sel4-tutorials/blob/master/tutorials/threads/threads.md
@@ -12,6 +12,13 @@
  *   - https://github.com/seL4/sel4-tutorials/blob/master/tutorials/dynamic-2/dynamic-2.md
  *   - https://github.com/seL4/sel4-tutorials/blob/master/libsel4tutorials/src/alloc.c
  *   - https://docs.sel4.systems/projects/sel4/api-doc.html
+ *
+ * References for keyboard input:
+ *   - https://wiki.osdev.org/%228042%22_PS/2_Controller
+ *
+ * References for screen output:
+ *   - https://wiki.osdev.org/Printing_To_Screen
+ *   - https://jbwyatt.com/253/emu/memory.html
  *
  * Licenses:
  *   - seL4 Tutorials License URL: https://github.com/seL4/sel4-tutorials/tree/master/LICENSES
