@@ -41,22 +41,31 @@ typedef float            f32;
 typedef double           f64;
 
 
-#define SCREEN_ROW_SIZE  25
-#define SCREEN_COL_SIZE  80
-#define SCREEN_SIZE      (SCREEN_ROW_SIZE * SCREEN_COL_SIZE)
-
 #define PAGE_TYPE        seL4_X86_4K
 #define PAGE_SIZE        4096
-#define CHAROUT_PHYS     0x000b8000  // see https://jbwyatt.com/253/emu/memory.html
+
+// --------------------------------------------------------------------------------
+// writing characters in video memory
+// see https://wiki.osdev.org/Printing_To_Screen
+// see https://jbwyatt.com/253/emu/memory.html
+#define CHAROUT_PHYS     0x000b8000
 
 #define ATTR_BOLD        0b00011111
 #define ATTR_INV         0b01110000
 #define ATTR_NORM        0b00010111
 
-#define KEYB_DATA_PORT   0x60        // see https://wiki.osdev.org/%228042%22_PS/2_Controller
+#define SCREEN_ROW_SIZE  25
+#define SCREEN_COL_SIZE  80
+#define SCREEN_SIZE      (SCREEN_ROW_SIZE * SCREEN_COL_SIZE)
+// --------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------
+// reading the keyboard
+// see https://wiki.osdev.org/%228042%22_PS/2_Controller
+#define KEYB_DATA_PORT   0x60        // keyboard data port
 #define KEYB_PIC         0           // on which PIC is the keyboard?
 #define KEYB_IRQ         1           // on which IRQ pin of the PIC is the keyboard?
 #define KEYB_INT         33          // cpu interrupt to map to
-
+// --------------------------------------------------------------------------------
 
 #endif
