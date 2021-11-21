@@ -1,5 +1,7 @@
 # os-seminar
 
+[![DOI: 10.5281/zenodo.5048391](https://zenodo.org/badge/DOI/10.5281/zenodo.5048391.svg)](https://doi.org/10.5281/zenodo.5048391)
+
 A small OS demonstration based on the [seL4® microkernel](https://github.com/seL4) and its tutorials.
 
 ## References for the [seL4®](https://sel4.systems) programming tutorials
